@@ -18,7 +18,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  *  Coded by William Bell (2004-07-03)
- *  email william.bell@absamail.co.za
+ *  email william.bell@frog.za.net
  *  first coded in Turbo Pascal ~1991
  *
  *  This program is compiled using Free Pascal
