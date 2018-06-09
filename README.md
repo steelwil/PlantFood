@@ -19,3 +19,5 @@ This is one of those sentimental things for me, anyway if you could use/improve 
 * Add new salts/fertilisers.
 * Compiles under Linux/Windows
 * Very small footprint.
+
+see: <http://www.frog.net.za/PlantFood/PlantFood.html>
