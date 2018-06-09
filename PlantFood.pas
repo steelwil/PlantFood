@@ -325,7 +325,7 @@ begin
   TextOut(34, t+2, 'Version 1.14');
   TextOut(25, t+4, 'Copyright (C) 2004 William Bell');
   TextOut(29, t+7, 'Coded by: William Bell');
-  TextOut(26, t+8, 'email: William.Bell@absamail.co.za');
+  TextOut(26, t+8, 'email: William.Bell@frog.za.net');
   TextOut(35, t+10, 'For my Dad');
   ForegroundColor(DarkGray);
   y := t+12;
