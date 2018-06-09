@@ -1,7 +1,7 @@
 {*
  *  Copyright (C) 2005 - William Bell
  *
- *  This file is part of PlantFood version 1.13
+ *  This file is part of PlantFood version 1.14
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
  *
  *  Coded by William Bell (2004-07-03)
  *  email william.bell@absamail.co.za
- :compiler fpc
  *  first coded in Turbo Pascal ~1991
  *
  *  This program is compiled using Free Pascal
@@ -27,7 +26,7 @@
  *}
 
 program plantfood;
-uses crt, dos;
+uses video, crt, dos, keyboard;
 
 {-----------------------------------------------------------------------------}
 const
@@ -42,9 +41,9 @@ const
   cSelectionForMg : char = #7;
   cDisplayResults : char = #8;
 
-  cDisplayAbout : char = #59;     { F1  }
-  cCustomRecipe : char = #60;     { F2  }
-  cAddNewSalt : char = #61;       { F3  }
+  cDisplayAbout : char = #49;     { F1  }
+  cCustomRecipe : char = #50;     { F2  }
+  cAddNewSalt : char = #51;       { F3  }
   cExitProgram : char = #27;      { Esc }
 
 {-----------------------------------------------------------------------------}
@@ -52,7 +51,6 @@ var
   SaltData:array[0..200,1..2]  of string[32];
   finalmass:array[1..6] of real;
   finalsalt:array[1..6] of string[32];
-  numoccur:array[1..5] of integer;
   nmdta:array[0..200] of string[32];
   massalt:array[1..5] of real;
   ppmdta:array[0..200,1..6] of string[4];
@@ -66,6 +64,68 @@ var
   docTotalSalts : integer;
   ckl :integer;
   sltdta:array[0..50,1..2] of string[32];
+  vidmode : TVideoMode;
+  colorAttr : Word;
+  M : TVideoMode;
+
+{-----------------------------------------------------------------------------}
+Procedure ForegroundColor(color : Word);
+begin
+  colorAttr := (colorAttr and $f000) or color shl 8;
+end;
+
+{-----------------------------------------------------------------------------}
+Procedure BackgroundColor(color : Word);
+begin
+  // White does not work but reverts to light gray
+  colorAttr := (colorAttr and $0f00) or color shl 12;
+end;
+
+{-----------------------------------------------------------------------------}
+Procedure TextOut(X,Y : Word;Const S : String);
+
+Var
+  P,I,M: Word;
+
+begin
+  P:=((X-1)+(Y-1)*ScreenWidth);
+  M:=Length(S);
+  If P+M>ScreenWidth*ScreenHeight then
+    M:=ScreenWidth*ScreenHeight-P;
+  For I:=1 to M do
+    VideoBuf^[P+I-1]:=Ord(S[i])+colorAttr;
+end;
+
+{-----------------------------------------------------------------------------}
+Procedure ClearTheScreen;
+Var
+  I,M,Attr: Word;
+begin
+  Attr:=$20+colorAttr;
+  M:=ScreenWidth*ScreenHeight;
+  For I:=1 to M do
+    VideoBuf^[I]:=Attr;
+end;
+
+{-----------------------------------------------------------------------------}
+Function itoa (I : Longint) : String;
+
+Var S : String;
+
+begin
+ Str(I, S);
+ itoa := S;
+end;
+
+{-----------------------------------------------------------------------------}
+Function ftoa (I : Double) : String;
+
+Var S : String;
+
+begin
+ Str(I:4:1, S );
+ ftoa := S;
+end;
 
 {-----------------------------------------------------------------------------}
 Function getString(var name :string) : char;
@@ -223,18 +283,28 @@ end;
 {*****************************************************************************}
 procedure DrawBorder;
 const
-  tline ='ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿';
-  mline ='³                                                                              ³';
-  bline ='ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ';
+  tline ='+------------------------------------------------------------------------------+';
+  mline ='|                                                                              |';
+  bline ='+------------------------------------------------------------------------------+';
   tiline ='                                                                               ';
 var
   i:integer;
 begin
-  gotoxy(1, 1);
-  write(tline);
+//  DoneVideo;
+  //GetVideoMode(M);
+  //TextOut(1,1,'clearing screen');
+  ClearTheScreen;
+{*  gotoxy(1, 1);
+  for (x:=1 to vidmode.Col do
+  begin
+    for (y:=1 to vidmode.Row do
+    begin
+    end;
+  end;
+  writeln(tline);
   for i := 1 to 7 do
-    write(mline,mline,mline);
-  write (mline,bline,tiline);
+    writeln(mline,mline,mline);
+  writeln (mline,bline,tiline);*}
 end;
 
 {-----------------------------------------------------------------------------}
@@ -246,28 +316,29 @@ var
   y :integer;
 begin
 
-  textcolor(LightGray);
-  textbackground(Black);
+  ForegroundColor(DarkGray);
+  BackgroundColor(Black);
   DrawBorder;
-  TextColor(White);
-  gotoxy(36, t);  write('PlantFood');
-  textcolor(LightGray);
-  gotoxy(34, t+2); write('Version 1.13');
-  gotoxy(25, t+4); write('Copyright (C) 2004 William Bell');
-  gotoxy(29, t+7); write('Coded by: William Bell');
-  gotoxy(26, t+8); write('email: William.Bell@absamail.co.za');
-  gotoxy(35, t+10); write('For my Dad');
-  TextColor(DarkGray);
+  ForegroundColor(White);
+  TextOut(36, t, 'PlantFood');
+  ForegroundColor(LightGray);
+  TextOut(34, t+2, 'Version 1.14');
+  TextOut(25, t+4, 'Copyright (C) 2004 William Bell');
+  TextOut(29, t+7, 'Coded by: William Bell');
+  TextOut(26, t+8, 'email: William.Bell@absamail.co.za');
+  TextOut(35, t+10, 'For my Dad');
+  ForegroundColor(DarkGray);
   y := t+12;
-  gotoxy(6, y+1); write('This program is free software; you can redistribute it and/or modify');
-  gotoxy(6, y+2); write('it under the terms of the GNU General Public License as published by');
-  gotoxy(6, y+3); write('the Free Software Foundation; either version 2 of the License, or');
-  gotoxy(6, y+4); write('(at your option) any later version.');
-  gotoxy(6, y+5); write('A copy of this license can be found in the file GNU.txt included with');
-  gotoxy(6, y+6); write('this program.');
-  TextColor(LightGray);
+  TextOut(6, y+1, 'This program is free software; you can redistribute it and/or modify');
+  TextOut(6, y+2, 'it under the terms of the GNU General Public License as published by');
+  TextOut(6, y+3, 'the Free Software Foundation; either version 2 of the License, or');
+  TextOut(6, y+4, '(at your option) any later version.');
+  TextOut(6, y+5, 'A copy of this license can be found in the file GNU.txt included with');
+  TextOut(6, y+6, 'this program.');
+  ForegroundColor(LightGray);
 
-  gotoxy(27, 25); write('Press Any Key to continue');
+  TextOut((M.Col div 2) - 12, M.Row, 'Press Any Key to continue');
+  UpdateScreen(True);
   DisplayAboutScreen := cRecipeSelection;
   ch := readkey;
   if (ch = #0) then ch := readkey;
@@ -276,23 +347,28 @@ end;
 {-----------------------------------------------------------------------------}
 Procedure DisplayMainScreen;
 var
-  i :integer;
+  i,j :integer;
+  tempstring :string;
 begin
-  textcolor(LightGray);
-  textbackground(Black);
+  BackgroundColor(LightGray);
+  ForegroundColor(Black);
   DrawBorder;
-  gotoxy(1,25);
-  write('   Use cursor keys    F1-About    F2-Custom Values    F3-Add Salt    Esc-Quit');
-  gotoxy(1,2);
-  gotoxy(2, 8); write('PlantFood calculates the masses of various salts needed to');
-  gotoxy(3, 8); write('supply a plants specific nutrient needs');
-  gotoxy(5, 9); write('NAME                          N     P     K    Ca     Mg');
+  //ForegroundColor(Black);
+  TextOut(1, M.Row, '   Use cursor keys    1-About    2-Custom Values    3-Add Salt    Esc-Quit');
+  TextOut(8, 2, 'PlantFood calculates the masses of various salts needed to');
+  TextOut(8, 3, 'supply a plants specific nutrient needs');
+  //ForegroundColor(Black);
+  TextOut(9, 5, 'NAME                          N     P     K    Ca     Mg');
+  //ForegroundColor(Black);
   for i:= 1 to docTotalRecipes do
   begin
-//    gotoxy(5+i,5); write(i);
-  //  gotoxy(7,i+5);
-    write(i ,nmdta[i],'   ',ppmdta[i,2],'  ',ppmdta[i,3],'  ',ppmdta[i,4],'  ',ppmdta[i,5],'  ',ppmdta[i,6]);
+    str(i, tempstring);
+    TextOut(5, 5+i, tempstring);
+    TextOut(9, 5+i, nmdta[i]);
+    for j:= 2 to 6 do
+      TextOut(25+j*6, 5+i, ppmdta[i,j]);
   end;
+  UpdateScreen(True);
 end;
 
 {-----------------------------------------------------------------------------}
@@ -325,7 +401,7 @@ end;
 {*****************************************************************************}
 Function SelectRecipe :char;
 var
-  t, pt, i :integer;
+  t, pt, i, j :integer;
   chd :char;
   code : word;
 begin
@@ -334,17 +410,20 @@ begin
   pt := t;
   repeat
     { Remove previous highlight }
-    textcolor(LightGray); textbackground(Black);
-    gotoxy(4,pt+5);
-    write(' ',pt,'   ');
-    gotoxy(9,pt+5);
-    write(nmdta[pt],'   ',ppmdta[pt,2],'  ',ppmdta[pt,3],'  ',ppmdta[pt,4],'  ',ppmdta[pt,5],'  ',ppmdta[pt,6],' ');
+    ForegroundColor(Black); BackgroundColor(White);
+    TextOut(4,pt+5, '                                                              ');
+    TextOut(5,pt+5, itoa(pt));
+    TextOut(9,pt+5, nmdta[pt]);
+    for j:= 2 to 6 do
+      TextOut(25+j*6, 5+pt, ppmdta[pt,j]);
     { Highlight }
-    textcolor(Black); textbackground(LightGray);
-    gotoxy(4,t+5);
-    write(' ',t,'   ');
-    gotoxy(9,t+5);
-    write(nmdta[t],'   ',ppmdta[t,2],'  ',ppmdta[t,3],'  ',ppmdta[t,4],'  ',ppmdta[t,5],'  ',ppmdta[t,6],' ');
+    ForegroundColor(White); BackgroundColor(Black);
+    TextOut(4,t+5, '                                                              ');
+    TextOut(5,t+5, itoa(t));
+    TextOut(9,t+5, nmdta[t]);
+    for j:= 2 to 6 do
+      TextOut(25+j*6, 5+t, ppmdta[t,j]);
+    UpdateScreen(True);
     chd:=readkey;
     if chd=#0 then
     begin
@@ -450,9 +529,9 @@ begin
     SearchElement(chemName, find, nu);
     dta[cit]:=atomw[cit]*nu;
     mol:=mol+dta[cit];
-  { if (nu>0) and (st) then writeln('³       Number of ',elements[cit],' molecules  : ',nu);}
+  { if (nu>0) and (st) then writeln('|       Number of ',elements[cit],' molecules  : ',nu);}
   end;
-{ if st then writeln('³       Atomic weight of salt is : ',mol:10:5);}
+{ if st then writeln('|       Atomic weight of salt is : ',mol:10:5);}
   for cit:= 1 to 11 do
     rto[cit]:=dta[cit]/mol;
  {if (chemName <> '') and (st) then
@@ -532,20 +611,17 @@ var
   bl:integer;
   h :text;
 begin
+  ForegroundColor(Black); BackgroundColor(LightGray);
   DrawBorder;
-  gotoxy(34, 2);
-  write('Add New Salt');
-  gotoxy(7, 4);
-  write('Remember you can always manually edit the ppm.txt file to do this!');
-  gotoxy(19, 8);
-  write('Type in the salt name');
+  TextOut(34, 2,'Add New Salt');
+  TextOut(7, 4,'Remember you can always manually edit the ppm.txt file to do this!');
+  TextOut(19, 8,'Type in the salt name');
+  UpdateScreen(True);
   gotoxy(19, 10);
   snme:='';
   getString(snme); { read salt name }
-  gotoxy(19, 13);
-  write('Type in the chemical formula');
-  gotoxy(19, 14);
-  write('IMPORTANT: Make sure the case is correct. (Na not NA or na)');
+  TextOut(19, 13,'Type in the chemical formula');
+  TextOut(19, 14,'IMPORTANT: Make sure the case is correct. (Na not NA or na)');
 
   gotoxy(19, y);
   str:='';
@@ -605,8 +681,7 @@ begin
   until (length(str)=20) or (ch=#13) or (ch=cExitProgram);
 
   saltnme[cnt] := str;
-  gotoxy(16, 25);
-  write('Press the "S" button to save this new information');
+  gotoxy(2,24); write('Esc-Cancel  S-Save');
   ch:=readkey;
   if (ch='s') or (ch='S') then
   begin
@@ -623,78 +698,94 @@ begin
 end;
 
 {-----------------------------------------------------------------------------}
-function choice(ln:integer) :integer;
-const
-  tb = 'ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ';
-  {tb= 'ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»';}
-  sb = 'Û';
-  {sb = 'º';                                                             }
-  bb = 'ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß';
-  {bb = 'ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼';}
-  sp = '                                                            ';
+Procedure WriteSalt(var x,y :integer; var saltname : string);
 var
-  top, t, pt :integer;
-  chd, ch :char;
+	i : integer;
+	pc,c :char;
 begin
-  top := 2;
-  t:=top;
-  pt := t;
-  {chd:=readkey;}
-  ckl:=1;
-  {while (chd<>#13) and (ch<>#13) and (ch<>#48) do
-  begin                                         }
-  repeat
-    { remove previous highlight }
-    gotoxy(10,pt);
-    write(sp);
-    gotoxy(10,pt+1);write(' ');gotoxy(69,pt+1);write(' ');
-    gotoxy(10,pt+2);write(' ');gotoxy(69,pt+2);write(' ');
-    gotoxy(10,pt+3);
-    write(sp);
-    { Highlight }
-    gotoxy(10,t);
-    write(tb);
-    gotoxy(10,t+1);write(sb);gotoxy(69,t+1);write(sb);
-    gotoxy(10,t+2);write(sb);gotoxy(69,t+2);write(sb);
-    gotoxy(10,t+3);
-    write(bb);
-    chd:=readkey;
-    if chd=#0 then
-    begin
-      ch:=readkey;
-      if (ch='P') or (ch='H') then
-      begin
-        pt := t;
-        if (ch=#80) and (ckl=ln) then   { go to first entry }
-        begin
-          t:=top-3;
-          ckl:=0;
-        end;
-        if (ch=#72) and (ckl=1) then    { go to last entry }
-        begin
-          t:=top+ln*3;
-          ckl:=ln+1;
-        end;
-        if ch=#80 then inc(ckl) else dec(ckl);
-        if ch=#80 then t:=t+3 else t:=t-3;
-      end;
-    end;
-  until (chd=#13) or (chd=#27) or (ch=#8); {BkSp}
-  if (chd=#27) or (ch=#8) then ckl:=-1;
-  {if ch=#59 then ckl:=0;}
-  choice := ckl;
+	c := saltname[1]; pc := c;
+	for i:= 1 to length(saltname) do { output chemical name }
+	begin
+		c := saltname[i];
+		if (c > '0') and (c < ':') and (pc <> '.') then
+		begin
+			gotoxy(x,y+1); write(c);
+		end
+		else
+		begin
+			gotoxy(x,y); write(c);
+		end;
+		x := x + 1;
+		pc := c;
+	end;
+end;
+
+{-----------------------------------------------------------------------------}
+function chooseSalt(ln:integer) :integer;
+var
+	x, y, c, pc :integer;
+	chd, ch :char;
+begin
+	c := 1; pc := c;
+	repeat
+		{ remove previous highlight }
+		textcolor(Black); textbackground(LightGray);
+		y := pc*3;
+		gotoxy(17, y); write(pc);
+		gotoxy(20, y); write(sltdta[pc,1]);
+		x := 52;
+		WriteSalt(x,y,sltdta[pc,2]);
+		{ Highlight }
+		textcolor(LightGray); textbackground(Black);
+		y := c*3;
+		gotoxy(17, y); write(c);
+		gotoxy(20, y); write(sltdta[c,1]);
+		x := 52;
+		WriteSalt(x,y,sltdta[c,2]);
+		pc := c;
+		chd:=readkey;
+		if chd=#0 then
+		begin
+			ch:=readkey;
+			if (ch=#80) then   { down, go to first entry }
+			begin
+				if (c=ln) then
+				begin
+					c := 1;
+				end
+				else
+				begin
+					c := c + 1;
+				end;
+			end;
+			if (ch=#72) then    { up, go to last entry }
+			begin
+				if (c=1) then
+				begin
+					c := ln;
+				end
+				else
+				begin
+					c := c -1;
+				end;
+			end;
+		end;
+	until (chd=#13) or (chd=#27) or (ch=#8); {BkSp}
+	if (chd=#27) or (ch=#8) then c:=-1;
+	chooseSalt := c;
 end;
 
 {-----------------------------------------------------------------------------}
 Procedure PriorityCalculation;
 var
-  vi : integer;
-  count : integer;
-  d : integer;
-  a : string;
-  kk : integer;
-  st : boolean;
-  ab : boolean;
+	vi : integer;
+	count : integer;
+	d : integer;
+	a : string;
+	kk : integer;
+	st : boolean;
+	ab : boolean;
+	numoccur:array[1..5] of integer;
 begin
   {  Priority calculation   }
   if ckl>-1 then
@@ -767,14 +858,14 @@ end;
 Function DisplaySalts(var majorType : char) :char;
 var
   stnme :string;
-  lng,ln,lmg,i,vi, n,count:integer;
+  lng,ln,i,vi, n,count,x,y:integer;
   aa,st,ab:boolean;
 begin
   lng:=docTotalSalts;
   i := ord(majorType) - ord(cSelectionForN) + 1;
   {for i:=1 to 5 do}
-  textcolor(Black);
-  textbackground(LightGray);
+  BackgroundColor(White);
+  ForegroundColor(Black);
   DrawBorder;
   begin
     n:=0;
@@ -805,32 +896,21 @@ begin
     end;
     ln:=n;
 
-    gotoxy(1, 3);
-
     if ln>7 then ln:=7; { max of 7 salts listed }
     for vi:=1 to ln do
     begin
-      writeln('³               ',vi,'  ',sltdta[vi,1]);
+      TextOut(17, vi*3, itoa(vi));
+      TextOut(20, vi*3, sltdta[vi,1]);
       stnme:=sltdta[vi,2];
-      gotoxy(52,wherey-1);
-      for lmg:= 1 to length(stnme) do { output chemical name }
-      begin
-        if (stnme[lmg]>'0') and (stnme[lmg]<':')
-                            and (stnme[lmg-1]<>'.') then
-        begin
-          write(' ');
-          gotoxy(lmg+51,wherey+1);
-          write(stnme[lmg]);
-          gotoxy(lmg+52,wherey-1);
-        end
-        else
-          write(stnme[lmg]);
-      end;
-      gotoxy(1,wherey+3);
+      x := 52;
+      y := vi*3;
+      WriteSalt(x,y,stnme);
     end;
-    gotoxy(10, 25);
-    write('Select ', nme[i], ' source                           Esc-Go Back');
-    ckl := choice(ln);
+    TextOut(15, 1, 'Select');
+    TextOut(22, 1, nme[i]);
+    TextOut(35, 1, 'source, Esc-Go Back');
+    UpdateScreen(True);
+    ckl := chooseSalt(ln);
 
     if ckl<>-1 then  { accept data }
     begin
@@ -858,42 +938,37 @@ Function DisplayResults : char;
 var
   i : integer;
 begin
-  textcolor(LightGray); textbackground(Black);
   DrawBorder;
-  gotoxy(9,3);
-  write('Nutrient needs of ', RecipeName);
-  gotoxy(9,5);
-  writeln('N          P          K          Ca         Mg         S');
-  gotoxy(7,6);
+  TextOut(9,3,'Nutrient needs of');
+  TextOut(27,3, RecipeName);
+  TextOut(9,5,'N          P          K          Ca         Mg         S');
   for i:=1 to 5 do
-    write(ppmdta[ans, i+1]:4,'       ');
-  write(s:4:0);
-  gotoxy(9,8);
-  write('Salts to be mixed with 200 liters water');
+  begin
+    TextOut(7+(i-1)*11,6,ppmdta[ans, i+1]);
+  end;
+  TextOut(7+55,6, ftoa(s));
+  TextOut(9,8,'Salts to be mixed with 200 liters water');
   for i:= 1 to 5 do
   begin
-    gotoxy(9,9+i);
-    write(finalsalt[i]);
-    gotoxy(45,9+i);
-    write(finalmass[i]/5:4:2,' g');
+    TextOut(9,9+i,finalsalt[i]);
+    TextOut(45,9+i, ftoa(finalmass[i]/5));
   end;
-  gotoxy(9,16);
-  write('PPM still lacking.');
-  gotoxy(9,18);
-  writeln('N          P          K          Ca         Mg');
+  TextOut(9,16,'PPM still lacking.');
+  TextOut(9,18,'N          P          K          Ca         Mg');
   s:=0;
   for i:=1 to 5 do
   begin
-    gotoxy(i*11-2, 19);
-    write(ppmelem[i]:4:2);
+    TextOut(i*11-2, 19,ftoa(ppmelem[i]));
     s:=s+ppmelem[i];
   end;
-  gotoxy(22, 22);
-  textcolor(Yellow);
-  if s<>0 then write('IMPOSSIBLE - try another combination');
-  textcolor(LightGray);
-  gotoxy(19,25);
-  write('Esc - Quit       Any other key - Go again.');
+  if s<>0 then
+  begin
+    ForegroundColor(Yellow);
+    TextOut(22, 22, 'IMPOSSIBLE - try another combination');
+    ForegroundColor(Black);
+  end;
+  TextOut(19,M.Row,'Esc - Quit       Any other key - Go again.');
+  UpdateScreen(True);
   DisplayResults := readkey;
   if (DisplayResults <> cExitProgram) then
   begin
@@ -904,9 +979,11 @@ end;
 {-----------------------------------------------------------------------------}
 Procedure Initialize;
 begin
-  textcolor(LightGray);
-  textbackground(Black);
-  clrscr;
+  InitVideo;
+  InitKeyboard;
+  ForegroundColor(LightGray); BackgroundColor(Black);
+  GetVideoMode(M);
+  ClearTheScreen;
   RecipeName := '';
   for j:=1 to 8 do
     saltnme[j] := '';
@@ -919,6 +996,7 @@ begin                 {  MAIN  }
   loadata;
   rtc := cRecipeSelection;
   repeat
+    GetVideoMode(vidmode);
     if (rtc = cRecipeSelection) then
     begin
       Initialize;
@@ -945,6 +1023,7 @@ begin                 {  MAIN  }
       break;
     end;
   until (rtc = 'Q') or (rtc = 'q') or (rtc = cExitProgram);
-  clrscr;
+	ClearScreen;
+	DoneVideo;
 end.
 
